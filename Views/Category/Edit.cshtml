@@ -1,0 +1,30 @@
+﻿@model UpdateCategoryDTO
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<div class="row">
+    <div class="col-sm-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Edit< Category</h5>
+            </div>
+            <form asp-action="Edit">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="Name">Title</label>
+                        <input asp-for="Name" class="form-control" placeholder="Category Name" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="form-group">
+                        <input type="submit" value="Edit Category" class="btn btn-outline-success btn-sm float-right" />
+                        <a asp-action="List" class="btn btn-outline-info btn-sm float-left">Back To List</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

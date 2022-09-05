@@ -1,0 +1,50 @@
+﻿
+
+# Asp.NET Core'da Asenkron Programlama
+
+Asenkron proglramlama, bir iş biriminin ana uyguluma iş parçacığından ayrı olarak çalıştığı ve çağıran iş parçacığına tamamlanmasını, başarısızlığını veya ilerlermesini bildirdiği bir paralel programlama aracıdır. Asenkron programlamanın kullanılmasından elde edilebelecek başlıca faydalara, geliştirilmiş uygulama performansı ve yanıt verme hızıdır. Eşzamansız model için özellikle uygun bir uygulama, hesaplama veya kaynak pahalı bir işlem çalıştırırken bir istemci uygulamasında yanıt veren bir kullanıcı arabirimi sağlamaktır.
+
+Örneğin, cyrtocurrency exchange verisini çekmek isteyen bir web uygulaması düşünelim. Uygulamnın arayüzünde gelen datanın listelendiği ve ayrı bir bölümde veri akarken notların tutulması için bir alan olduğunu düşünelim. Bu uygulamayı asenkron programlama perspektifinde incelediğimizde, kullan ıcı cyrptocurruncy exchange verisinin görmek içi "get" işlemini yapacak butona bastığında UI Thread'inin kitlenir ve uygulama veriyi getirene kadar giç bir şekilde müdahele edemeyiz. Hatta işletim sistemi uygulumamıızın kilitlendiğini bile fark eediyor ve bize uygulamanın artık yanıt vermedğini bize ivedilikle bildirir. Eşzamanlı olmak, buradaki her şeyi uygulama kullanıcı arayüzümüzle aynı iş parçacığında çaşıştıracağı anlamına gelir. Bu aynı zamanda UI iş parçacığındaki her şeyi çalıştırmak olarak da bilinir. Aynı örneği asenkron prensipleri kullanan eşdeğer bir versiyona bakalım ve sonra senkronize ve asenkron versiyonu kullanma arasındaki farkın ne olduğunu ve uygulamalarımız için asenkron uygulamanın neden bu kadar önemli olduğunu anlayalım. Aynı senaryoda kullanıcı veriyi görmek istediğinde bu sefer asenkron programming vasıtasıyla UI Thread'ini (Arayüz İş Parçacığı) bu işlem ile meşgul etmeyeceğiz böylelikle kullanıcı gelen veri üzerinden notlarını tutabilecektir. Tabiki bu asenkron yapıyı kurmak için uygulamamızda bir dizi değişiklik yapmamız gerekmektedir.
+
+
+#### .NET'de Async ve Await
+
+.NET'te zaman uyumsuz ilkelerle karşılaştığınızda ilk denemeniz gereken en yaygın şey, methodlarımızı "async" anahtar sözcüğüyle işaretlemektir. Methodlarımızı async anahtar sözcüğü ile işaretlediğimizde asenkron olarak çalışmalarını temin etmek için birinci adımı atmış oluyoruz. Bunun yanında methodumuzun gövdesinde "await" anahtar sözcüğününde olması gerekmektedir. "await" anahtar sözcüğü ile methodumuzun içerisinde veriyi çekmek için atılan talep yerine getiren kodu etiketlemiş oluyoruz. Aslında asenkron ilkeler, her tür I/O işlemi için uygundur. Bu durumda yaptığımız gibi, web üzerinden bir API ile etkileşime gireriz, ancak bu aynı zamanda diskten veya bellekten okuma ve yazma olabilir veya veritabanı işlemleri gibi şeyler de yapabilir.
+
+    private async void Search_Click(object sender, RoutedEventArgs e)
+    {
+        using (var clint = new HttpClient())
+        {
+            var response = await clint.GetAsync($"http://localhost:21323/api/stocks/{Ticker.Text}");
+
+            var content = await response.Content.ReadAsStringAsync();
+            //await => anahtar sözcüğü eşzamansız işlemden sonra yürütülen kodun devamını sunar. Ayrıca await anahtar sözcüğünü kullanmak, eşzamansız işlemin başarısını doğrulayacak ve başarılı yürütmeden sonra size olası sonucu verecektir.
+
+            var data = JsonConvert.DeserializeObject<IEnumerable<StockPrice>>(content);    
+        }
+    }
+
+    "wait" anahtar sözcüğü, bu asenkron işlemin sonucunu, yalnızca mevcut iş parçacığını engellemeden veriler kullanılabilir olduğunda elde etmek istediğimizi belirtmemizin bir yoludur. Bu bize HttpResponseMessage'ı verir. Ayrıca içeriği okuduğumuzdan emin olmamız gerekiyor ve burada ReadAsString'in de asenkron bir işlem olduğunu göreceksiniz ve burada bize bunu da beklememiz gerektiğini ima ediyor. Buradaki bu, HttpResponseMessage'ı GetAsync() işlemimizden, yanıt hazır olduğunda response değişkenine almamıza izin veriyor ve sonra, hazır olduğunda, uygulamamızdaki UI iş parçacığımız engellemeden bir sonraki satıra geçeceğiz. Bu nedenle, wait anahtar sözcüğünü ne zaman kullanırsak, response değişkeni her zaman asenkron işlemimizin sonucunu içerecektir.
+
+Uygulamalarımızda bahsettiğimiz asenkron prensipler sadece Windows uygulamaları veya mobil uygulamalar için değildir. Aynı ilkeyi ASP.NET'teki sunucu tarafı koduna da uygulayabiliriz. Aşağıdaki code bloğu, Windows uygulamamızda yaptığımızın hemen hemen aynısını yapmamıza izin veren bir web projesi içindeki bir HomeController'ı göstermektedir.
+
+    public class HomeController : HomeController
+    {
+        [Route("Stock/{ticker}")]
+        public async Task<ActionResult> Stock(string ticker)
+        {
+            if (string.IsNullOrWhiteSpace(ticker) ticker == "MSFT";
+
+            ViewBag.Title = $"Stock Details for {ticker}";
+
+            var store = new DataStore();
+
+            var data = await store.LoadStocks();
+
+            return View(data[ticker]);  
+        }
+    }
+
+Bu, ASP.NET'in devam eden eşzamansız işlemlere bir referansa sahip olacağı ve ardından tüm sonuçlar mevcut olduğunda bu eylemden eylem sonucunu alacağı anlamına gelir. Ayrıca bir DataStore'umuz olduğunu da görebilirsiniz. DataStore'dan asenkron bir işlem olan LoadStocks'u çağırırız. Burada asenkron yönteminizde bir göreviniz olduğunda, hemen hemen her zaman bunu beklemek (await) istersiniz. Bu yüzden, devam etmekte olan bu LoadStocks işleminden hisseleri çıkarabilmemiz için, wait anahtar sözcüğünü tanıtıyoruz ve ardından verileri data değişkenine atıyoruz ve  sonra bunu View() geri dönüyoruz. 
+
+*ASP.NET içinde zaman uyumsuz ve beklemeyi (await) kullanmanın en büyük yararı, kullandığınız IIS'yi veya web sunucusunu aşırı derecede rahatlatmaktır.*

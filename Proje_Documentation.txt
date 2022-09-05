@@ -1,0 +1,308 @@
+﻿
+
+
+1. Asp Net Core Web App (Model - View - Component) projesi açýlýr.
+2. Models => Entities klasörü açýlýr.
+	2.1. Entites => Abstract klasörü açýlýr.
+	    2.1.1. Entites => Abstract => BaseEntity.cs açýlýr.
+
+            public enum Status { Active = 1, Modified = 2, Passive = 3 }
+            
+            public abstract class BaseEntity
+            {
+                public int Id { get; set; }
+            
+                private DateTime _createDate = DateTime.Now;
+                public DateTime CreateDate
+                {
+                    get => _createDate;
+                    set => _createDate = value;
+                }
+            
+                public DateTime? UpdateDate { get; set; }
+                public DateTime? DeleteDate { get; set; }
+            
+                private Status _status = Status.Active;
+                public Status Status 
+                {
+                    get => _status;
+                    set => _status = value;
+                }
+            }
+    
+    2.2. Entites => Concrete klasörü açýlýr.
+        2.2.1. Entites => Concrete => Page.cs sýnýfý açýlýr.
+
+            public class Page:BaseEntity
+            {
+                public string Title { get; set; }
+                public string Content { get; set; }
+                public string Slug { get; set; }
+            }
+
+         2.2.2. Entites => Concrete => Category.cs sýnýfý açýlýr.
+
+            public class Category:BaseEntity
+            {
+                public string Name { get; set; }
+                public string Slug { get; set; }
+
+                public List<Product> Products { get; set; }
+            }
+
+         2.2.3. Entites => Concrete => Product.cs sýnýfý açýlýr.
+
+            public class Product:BaseEntity
+            {
+                public string Name { get; set; }
+                public string Description { get; set; }
+                public string Slug { get; set; }
+                public decimal UnitPrice { get; set; }
+                public string Image { get; set; }
+
+                public int CategoryId { get; set; }
+                public virtual Category Category { get; set; }
+            }
+
+3. Project => Infrastructure klasörü açýlýr.
+    3.1. Project => Infrastructure => Context klasörü açýlýr.
+        3.1.1. Project => Infrastructure => Context => ApplicationDbContext.cs sýnýfý açýlýr.
+
+            public class ApplicationDbContext:DbContext
+            {
+                public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+                public DbSet<Category> Categories { get; set; }
+                public DbSet<Page> Pages { get; set; }
+                public DbSet<Product> Products { get; set; }
+            }
+
+    3.2. Project => Infrastructure => Repositories klasörü açýlýr.
+        3.2.1. Project => Infrastructure => Repositories => Interfaces klasörü açýlýr.
+            3.2.1.1. Project => Infrastructure => Repositories => Interfaces => BaseRepository.cs açýlýr.
+
+                public interface IBaseRepository<T> where T : BaseEntity
+                {
+                    Task Add(T entity);
+                    Task Update(T entity);
+                    Task Delete(T entity);
+
+                    Task<List<T>> GetByDefaults(Expression<Func<T, bool>> expression);
+                    Task<T> GetByDefault(Expression<Func<T, bool>> expression);
+
+                    Task<List<TResult>> GetFilteredList<TResult>(Expression<Func<T, TResult>> select,
+                                                                 Expression<Func<T, bool>> where = null,
+                                                                 Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+                                                                 Func<IQueryable<T>, IIncludableQueryable<T, object>> join = null);
+
+                    Task<T> GetById(int id);
+
+                    Task<bool> Any(Expression<Func<T, bool>> exp);
+                }
+
+            3.2.1.2. Project => Infrastructure => Repositories => Interfaces => IPageRepository.cs açýlýr.
+
+                    public interface IPageRepository : IBaseRepository<Page>
+                    {
+
+                    }
+
+          3.2.1.3. Project => Infrastructure => Repositories => Interfaces => EntityTypeRepository => ICategoryRepository.cs açýlýr.
+
+                    public interface ICategoryRepository : IBaseRepository<Category>
+                    {
+                    }
+
+         3.2.2.4. Project => Infrastructure => Repositories => Interfaces => EntityTypeRepository => IProductRepository.cs açýlýr.
+
+                    public interface IProductRepository : IBaseRepository<Product>
+                    {
+                    }
+
+        3.2.2 Project => Infrastructure => Repositories => Concrete klasörü açýlýr.
+            3.2.2.1. Project => Infrastructure => Repositories => Concrete => BaseRepository.cs sýnýfý açýlýr.
+
+                public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
+                {
+                    private readonly ApplicationDbContext _dbContext;
+                    protected readonly DbSet<T> _table;
+
+                    public BaseRepository(ApplicationDbContext applicationDbContext)
+                    {
+                        this._dbContext = applicationDbContext;
+                        this._table = _dbContext.Set<T>();
+                    }
+
+                    public async Task Add(T entity)
+                    {
+                        await _table.AddAsync(entity);
+                        await _dbContext.SaveChangesAsync();
+                    }
+
+                    public async Task<bool> Any(Expression<Func<T, bool>> exp) => await _table.AnyAsync(exp);
+
+                    public async Task Delete(T entity) => await Update(entity);
+
+                    public async Task<List<TResult>> GetFilteredList<TResult>(Expression<Func<T, TResult>> select,
+                                                                              Expression<Func<T, bool>> where = null,
+                                                                              Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+                                                                              Func<IQueryable<T>, IIncludableQueryable<T, object>> join = null)
+                    {
+                        IQueryable<T> query = _table;
+
+                        if (join != null) query = join(query);
+                        if (where != null) query = query.Where(where);
+                        if (orderBy != null) return await orderBy(query).Select(select).ToListAsync();
+                        else return await query.Select(select).ToListAsync();
+                    }
+
+                    public async Task<T> GetByDefault(Expression<Func<T, bool>> exp) => await _table.FirstOrDefaultAsync(exp);
+
+                    public async Task<List<T>> GetByDefaults(Expression<Func<T, bool>> exp) => await _table.Where(exp).ToListAsync();
+
+                    public async Task<T> GetById(int id) => await _table.FindAsync(id);
+
+                    public async Task Update(T entity)
+                    {
+                        _dbContext.Entry<T>(entity).State = EntityState.Modified;
+                        await _dbContext.SaveChangesAsync();
+                    }
+                }
+                    
+
+            3.2.2.2. Project => Infrastructure => Repositories => Concrete => PageRepository.cs sýnýfý açýlýr.
+
+                    public class PageRepository : BaseRepository<Page>, IPageRepository
+                    {
+                        public PageRepository(ApplicationDbContext applicationDbContext) : base(applicationDbContext)
+                        {
+
+                        }
+                    }
+
+            3.2.2.3. Project => Infrastructure => Repositories => Concrete => CategoryRepository.cs sýnýfý açýlýr
+
+                    public class CategoryRepository : BaseRepository<Category>, ICategoryRepository
+                    {
+                        public CategoryRepository(ApplicationDbContext applicationDbContext) : base(applicationDbContext)
+                        {
+
+                        }
+                    }
+
+            3.2.2.4. Project => Infrastructure => Repositories => Concrete => ProductRepository.cs sýnýfý açýlýr
+
+                    public class ProductRepository : BaseRepository<Product>, IProductRepository
+                    {
+                        public ProductRepository(ApplicationDbContext applicationDbContext) : base(applicationDbContext)
+                        {
+
+                        }
+                    }
+4. Models => DTOs & VMs klasörleir açýlýr. Projedeki iþ mantýklarýmýza göre data transfer objelerimiz ve view model'lerimiz oluþturulur.
+5. Models => AutoMapper klasörü açýlýr.
+    5.1. AutoMapper paketi yüklenir.
+    5.2. AutoMapper.Extensions.Microsoft.DependencyInjection paketi yüklenir.
+    5.3. Models => AutoMapper => Mapping.cs sýnýfý açýlýr.
+
+        public class Mapping:Profile
+        {
+            public Mapping()
+            {
+                CreateMap<Page, CreatePageDTO>().ReverseMap();
+                CreateMap<Page, UpdatePageDTO>().ReverseMap();
+                CreateMap<Page, PageVM>().ReverseMap();
+
+                CreateMap<Category, CreateCategoryDTO>().ReverseMap();
+                CreateMap<Category, UpdateCategoryDTO>().ReverseMap();
+
+                CreateMap<Product, CreateProductDTO>().ReverseMap();
+                CreateMap<Product, UpdateCategoryDTO>().ReverseMap();
+                CreateMap<Product, ProductVM>().ReverseMap(); 
+            }
+        }
+
+4. Migrations yapýlýr.
+5. Startup.cs altýnda bulunana ConfigureService() methoduna baðýmlýlýk yaratacak servisler eklenir.
+    
+    services.AddAutoMapper(typeof(Mapping));
+
+    services.AddDbContext<ApplicationDbContext>(options => 
+    { 
+        options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"))
+    });
+
+    services.AddScoped<ICategoryRepository, CategoryRepository>();
+    services.AddScoped<IPageRepository, PageRepository>();
+    services.AddScoped<IProductRepository, ProductRepository>();
+
+6. Controllers => PageController.cs açýlýr. Page varlýðý için crud iþlemleri gerçekleþtirilir.
+7. Controllers => CategoryController.cs açýlýr. Page varlýðý için crud iþlemleri gerçekleþtirilir.
+8. Controllers => ProductController.cs açýlýr. Page varlýðý için crud iþlemleri gerçekleþtirilir.
+9. Models => Compnents klasörü açýlýr.
+    9.1. Models => Compnents => MainMenuViewComponent.cs açýlýr.
+
+        public class MainMenuViewComponent:ViewComponent
+        {
+            private readonly IPageRepository _pageRepository;
+
+            public MainMenuViewComponent(IPageRepository pageRepository) => this._pageRepository = pageRepository;
+
+            public async Task<IViewComponentResult> InvokeAsync() => View(await _pageRepository.GetByDefaults(x => x.Status != Status.Passive));
+  
+        }
+
+    9.2. Models => Compnents => CategoryViewComponent.cs açýlýr.
+
+        public class CategoryViewComponent:ViewComponent
+        {
+            private readonly ICategoryRepository _categoryRepository;
+
+            public CategoryViewComponent(ICategoryRepository categoryRepository) => this._categoryRepository = categoryRepository;
+
+            public async Task<IViewComponentResult> InvokeAsync() => View(await _categoryRepository.GetByDefaults(x => x.Status != Status.Passive));
+        }
+
+10. Views => Shared => Components klasçü açýlýr.
+    10.1. Views => Shared => Components => Menu klasörü açýlýr.
+        10.1.1. Views => Shared => Components => Menu => Defalut.cshtml partial açýlýr.
+
+            @model IEnumerable<Page>
+            
+            @foreach (Page item in Model)
+            {
+                <li class="nav-item">
+                    <a class="nav-link text-dark" asp-controller="Page" asp-action="Page" asp-route-slug="@item.Slug">@item.Title</a>
+                </li>
+            }
+
+    10.2. Views => Shared => Components => Category klasörü açýlýr.
+        10.2.1. Views => Shared => Components => Category => Defalut.cshtml partial açýlýr.
+
+            @model IEnumerable<Category>
+
+            <ul class="list-group">
+            
+                <li class="list-group-item">
+                    <a class="nav-link text-dark" asp-controller="Product" asp-action="Index">All Product</a>
+                </li>
+            
+                @foreach (Category category in Model)
+                {
+                    <li class="list-group-item">
+                        <a class="nav-link text-dark" asp-controller="Product" asp-action="ProductByCategory" asp-route-            categorySlug="@category.Slug">@category.Name</a>
+                    </li>
+                }
+            </ul>
+
+11. Views => Shared => _Layout.cshtml içerisinde tarasýma uygun düþen yerlerde hazýrlanan component'lar çaðrýlýr.
+
+
+
+
+
+    
+
+    
+
+
