@@ -1,4 +1,4 @@
-﻿@model CreatePageDTO
+﻿@model UpdatePageDTO
 @{
     ViewData["Title"] = "Create";
 }
@@ -6,9 +6,9 @@
     <div class="col-sm-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">Create Page</h5>
+                <h5 class="card-title">Update Page</h5>
             </div>
-            <form asp-action="Create">
+            <form asp-action="Edit">
                 <div class="card-body">
                     <div class="form-group">
                         <label asp-for="Title">Title</label>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="form-group">
-                        <input type="submit" value="Create Page" class="btn btn-outline-success btn-sm float-right" />
+                        <input type="submit" value="Edit Page" class="btn btn-outline-success btn-sm float-right" />
                         <a asp-action="List" class="btn btn-outline-info btn-sm float-left">Back To List</a>
                     </div>
                 </div>
@@ -35,3 +35,4 @@
 @section Scripts{
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
+

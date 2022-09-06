@@ -52,13 +52,48 @@ namespace AsynchronousProgramming.Controllers
             }
         }
 
-        public  IActionResult List()
+        public IActionResult List()
         {
             var page = _repository.Where(x => x.Status != Models.Entities.Abstract.Status.Passive);
             PageVm pageVm = new PageVm();
             pageVm.Pages.AddRange(page);
             return View(pageVm);
         }
+
+        public async Task<IActionResult> Edit(int id)
+        {
+            Page page = await _repository.GetById(id);
+            var model = _mapper.Map<UpdatePageDTO>(page);
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(UpdatePageDTO model)
+        {
+            if (ModelState.IsValid)
+            {
+                var slug = await _repository.GetByDefault(x => x.Slug == model.Slug);
+                if (slug != null)
+                {
+                    ModelState.AddModelError(string.Empty, "The page is already exist.!!");
+                    TempData["Warning"] = "The page is already exist..!";
+                    return View(model);
+                }
+                else
+                {
+                    var page = _mapper.Map<Page>(model);
+                    await _repository.Update(page);
+                    TempData["Success"] = "The page has been updated..!";
+                    return RedirectToAction("List");
+                }
+            }
+            else
+            {
+                TempData["Error"] = "The page hasn't been updated..!";
+                return View(model);
+            }
+        }
+
 
     }
 }
