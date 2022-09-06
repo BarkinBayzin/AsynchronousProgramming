@@ -1,4 +1,5 @@
 ﻿using AsynchronousProgramming.Infrastructure.Repositories.Interfaces;
+using AsynchronousProgramming.Models.Entities.Concrete;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -6,9 +7,9 @@ namespace AsynchronousProgramming.Models.Components
 {
     public class CategoryViewComponent : ViewComponent
     {
-        private readonly ICategoryRepository _categoryRepository;
+        private readonly IBaseRepository<Category> _categoryRepository;
 
-        public CategoryViewComponent(ICategoryRepository categoryRepository)
+        public CategoryViewComponent(IBaseRepository<Category> categoryRepository)
         {
             _categoryRepository = categoryRepository;
         }
