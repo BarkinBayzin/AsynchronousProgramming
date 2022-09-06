@@ -5,6 +5,8 @@ using AsynchronousProgramming.Models.ViewModels;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using AsynchronousProgramming.Models.Entities.Abstract;
+using System.Linq;
 
 namespace AsynchronousProgramming.Controllers
 {
@@ -52,12 +54,25 @@ namespace AsynchronousProgramming.Controllers
             }
         }
 
-        public IActionResult List()
+        public async Task<IActionResult> List()
         {
-            var page = _repository.Where(x => x.Status != Models.Entities.Abstract.Status.Passive);
-            PageVm pageVm = new PageVm();
-            pageVm.Pages.AddRange(page);
-            return View(pageVm);
+            var pages = await _repository.GetFilteredList(
+                select: x => new PageVm
+                {
+                    Id = x.Id,
+                    Content = x.Content,
+                    Slug = x.Slug,
+                    Status = x.Status,
+                },
+                where: x => x.Status != Status.Passive,
+                orderBy: x => x.OrderBy(z => z.Id));
+
+            return View(pages);
+
+            //var page = _repository.Where(x => x.Status != Models.Entities.Abstract.Status.Passive);
+            //PageVm pageVm = new PageVm();
+            //pageVm.Pages.AddRange(page);
+            //return View(pageVm);
         }
 
         public async Task<IActionResult> Edit(int id)
@@ -66,7 +81,7 @@ namespace AsynchronousProgramming.Controllers
             var model = _mapper.Map<UpdatePageDTO>(page);
             return View(model);
         }
-
+       
         [HttpPost]
         public async Task<IActionResult> Edit(UpdatePageDTO model)
         {
@@ -94,6 +109,35 @@ namespace AsynchronousProgramming.Controllers
             }
         }
 
+        public async Task<IActionResult> Remove(int id)
+        {
+            Page page = await _repository.GetById(id);
+            if (page != null)
+            {
+                await _repository.Delete(page);
+                TempData["Success"] = "The page has been removed..!";
+                return RedirectToAction("List");
+            }
+            else
+            {
+                TempData["Error"] = "The page hasn't been removed..!";
+                return RedirectToAction("List");
+            }
+        }
 
+        public async Task<IActionResult> Page(string slug)
+        {
+            if (slug == null)
+            {
+                //var a = await _repository.GetByDefault(x => x.Slug == "home");
+                return RedirectToAction("List");//parametreden gelen slug boş ise home sayfasını aç
+            }
+
+            var page = await _repository.GetByDefault(x => x.Slug == slug);//parametrenden gelen slug ne ise o sluga ait sayfası ilgili değişkene atadık.
+
+            if (page == null) return NotFound(); // yukarıdaki linq tu null dönerse bulunamadı sayfası burada client'ta dönülür.
+
+            return View(page);//slug vasıtasıyla yakalanan sayfa burada client'a dönülür
+        }
     }
 }

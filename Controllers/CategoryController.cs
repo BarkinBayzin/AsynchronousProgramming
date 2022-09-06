@@ -4,6 +4,7 @@ using AsynchronousProgramming.Models.Entities.Concrete;
 using AsynchronousProgramming.Models.ViewModels;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AsynchronousProgramming.Controllers
@@ -48,12 +49,26 @@ namespace AsynchronousProgramming.Controllers
                 return View(model);
             }
         }
-        public IActionResult List()
+        public async Task<IActionResult> List()
         {
-            var list = _categoryRepository.Where(x => x.Status != Models.Entities.Abstract.Status.Passive);
-            CategoryVM vm = new CategoryVM();
-            vm.Categories.AddRange(list);
-            return View(vm);
+            var categories = await _categoryRepository.GetFilteredList(
+                select: x => new CategoryVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Slug =x.Slug,
+                    Status = x.Status,
+                    CreateDate = x.CreateDate
+                },
+                where: x => x.Status != Models.Entities.Abstract.Status.Passive,
+                orderBy: x => x.OrderByDescending(z => z.CreateDate));
+
+            return View(categories);
+
+            //var list = _categoryRepository.Where(x => x.Status != Models.Entities.Abstract.Status.Passive);
+            //CategoryVM vm = new CategoryVM();
+            //vm.Categories.AddRange(list);
+            //return View(vm);
         }
 
         public async Task<IActionResult> Edit(int id)
