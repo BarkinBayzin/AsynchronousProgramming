@@ -66,16 +66,19 @@ namespace AsynchronousProgramming.Infrastructure.Repositories.Concrete
             return _table.Where(expression).ToList();
         }
 
-        public async Task<List<TResult>> GetFilteredList<TResult>(Expression<Func<T, TResult>> select, Expression<Func<T, bool>> where = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderyBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> join = null)
+        public async Task<List<TResult>> GetFilteredList<TResult>(Expression<Func<T, TResult>> select, 
+                                                                    Expression<Func<T, bool>> where = null, 
+                                                                    Func<IQueryable<T>, IOrderedQueryable<T>> orderyBy = null,                                          Func<IQueryable<T>, IIncludableQueryable<T, object>> join = null)
         {
             IQueryable<T> query = _table;
 
             if (join != null) query = join(query);
 
+            if(where != null) query = query.Where(where);
+
             if (orderyBy != null) return await orderyBy(query).Select(select).ToListAsync();
 
             else return await query.Select(select).ToListAsync();
-
         }
     }
 }

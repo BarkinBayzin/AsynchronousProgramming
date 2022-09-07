@@ -10,6 +10,7 @@ using System.Linq;
 
 namespace AsynchronousProgramming.Controllers
 {
+    //[Route("Page")]
     public class PageController : Controller
     {
         private readonly IBaseRepository<Page> _repository;
@@ -61,6 +62,7 @@ namespace AsynchronousProgramming.Controllers
                 {
                     Id = x.Id,
                     Content = x.Content,
+                    Title = x.Title,
                     Slug = x.Slug,
                     Status = x.Status,
                 },
@@ -125,12 +127,13 @@ namespace AsynchronousProgramming.Controllers
             }
         }
 
+        //[Route("{slug?}")]
         public async Task<IActionResult> Page(string slug)
         {
             if (slug == null)
             {
                 //var a = await _repository.GetByDefault(x => x.Slug == "home");
-                return RedirectToAction("List");//parametreden gelen slug boş ise home sayfasını aç
+              return RedirectToAction("List");//parametreden gelen slug boş ise home sayfasını aç
             }
 
             var page = await _repository.GetByDefault(x => x.Slug == slug);//parametrenden gelen slug ne ise o sluga ait sayfası ilgili değişkene atadık.

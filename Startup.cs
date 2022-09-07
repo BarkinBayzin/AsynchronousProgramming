@@ -71,15 +71,15 @@ namespace AsynchronousProgramming
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    "page",
-                    "{slug?}",
-                    defaults: new { controller = "Page", action = "Page" });
+                //endpoints.MapControllerRoute(
+                //    "page",
+                //    "{slug?}",
+                //    defaults: new { controller = "Page", action = "Page" });
 
-                endpoints.MapControllerRoute(
-                   "product",
-                   "product/{categorySlug?}",
-                   defaults: new { controller = "Product", action = "ProductByCategory" });
+                //endpoints.MapControllerRoute(
+                //   "product",
+                //   "product/{categorySlug}",
+                //   defaults: new { controller = "Product", action = "ProductByCategory" });
 
                 endpoints.MapControllerRoute(
                     name: "default",

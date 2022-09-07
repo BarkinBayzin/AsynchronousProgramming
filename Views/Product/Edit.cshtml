@@ -1,0 +1,54 @@
+﻿@model UpdateProductDTO
+@{
+     ViewData["Title"] = "Edit";
+}
+<div class="row">
+    <div class="col-sm-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Edit Product</h5>
+            </div>
+            <form asp-action="Edit" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Image" />
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="Name">Name</label>
+                        <input asp-for="Name" class="form-control" placeholder="Product Name" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Description">Description</label>
+                        <input asp-for="Description" class="form-control" placeholder="Product Content" />
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="UnitPrice">Unit Price</label>
+                        <input asp-for="UnitPrice" class="form-control" placeholder="Product Unit Price" />
+                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="CategoryId" class="control-label">Choose The Category</label>
+                        <select asp-for="CategoryId" class="form-control">
+                            @foreach (Category category in Model.Categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="UploadImage" class="control-label">Choose The Picture</label>
+                        <input asp-for="UploadImage" class="form-control" />
+                        <span asp-validation-for="UploadImage" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="form-group">                       
+                        <input type="submit" value="Edit Product" class="btn btn-outline-success btn-sm float-right" />
+                        <a asp-action="List" class="btn btn-outline-info btn-sm float-left">Back To List</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
